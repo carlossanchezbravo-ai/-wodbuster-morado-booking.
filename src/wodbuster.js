@@ -24,8 +24,9 @@ async function settleNetwork(page, timeout = 5_000) {
 }
 
 async function login(page, config) {
-  const loginUrl = `${config.baseUrl}/account/login.aspx`;
-  await page.goto(loginUrl, {
+  const loginUrl = new URL('/account/login.aspx', config.baseUrl);
+  loginUrl.searchParams.set('cb', config.boxSlug);
+  await page.goto(loginUrl.href, {
     waitUntil: 'domcontentloaded',
     timeout: config.navigationTimeoutMs,
   });
@@ -67,17 +68,29 @@ async function login(page, config) {
   }
 }
 
-async function goToReservations(page, timeout) {
+async function goToReservations(page, config) {
   const today = new Date();
   today.setUTCHours(0, 0, 0, 0);
   const timestamp = Math.floor(today.getTime() / 1000);
-  const origin = new URL(page.url()).origin;
+  const reservationsUrl = new URL('/athlete/reservas.aspx', config.reservationsBaseUrl);
+  reservationsUrl.searchParams.set('t', String(timestamp));
 
-  await page.goto(`${origin}/athlete/reservas.aspx?t=${timestamp}`, {
+  await page.goto(reservationsUrl.href, {
     waitUntil: 'domcontentloaded',
-    timeout,
+    timeout: config.navigationTimeoutMs,
   });
   await settleNetwork(page);
+
+  const finalUrl = new URL(page.url());
+  if (
+    finalUrl.hostname !== new URL(config.reservationsBaseUrl).hostname ||
+    !/\/athlete\/reservas\.aspx$/i.test(finalUrl.pathname) ||
+    !finalUrl.searchParams.get('t')
+  ) {
+    throw new Error(
+      `WodBuster no abrió las reservas de CrossFit Morado (ruta final: ${finalUrl.pathname}).`
+    );
+  }
 }
 
 async function findReservationButton(page, reservationKey, className) {
@@ -272,7 +285,7 @@ export async function runWodBuster(config) {
     await login(page, config);
     await waitUntil(config.targetEpochMs, { log: message => console.log(message) });
     console.log('Consultando las clases disponibles…');
-    await goToReservations(page, config.navigationTimeoutMs);
+    await goToReservations(page, config);
 
     const results = await processReservations(page, config);
     writeSummary(results);

@@ -3,6 +3,9 @@ const DEFAULT_SCHEDULE = Object.freeze({
   thursday: '16:00',
 });
 
+const DEFAULT_BOX = 'morado';
+const BOX_PATTERN = /^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$/;
+
 const WEEKDAYS = new Set([
   'monday',
   'tuesday',
@@ -23,6 +26,14 @@ export function parseBoolean(value, fallback = false) {
   if (['true', '1', 'yes', 'y'].includes(normalized)) return true;
   if (['false', '0', 'no', 'n'].includes(normalized)) return false;
   throw new Error(`Valor booleano no válido: ${value}`);
+}
+
+export function parseBoxSlug(value = DEFAULT_BOX) {
+  const slug = String(value || DEFAULT_BOX).trim().toLowerCase();
+  if (!BOX_PATTERN.test(slug)) {
+    throw new Error(`Centro de WodBuster no válido: ${value}`);
+  }
+  return slug;
 }
 
 export function parseSchedule(rawValue) {
@@ -81,8 +92,12 @@ export function loadConfig(env = process.env) {
     throw new Error('BOOKING_TARGET_EPOCH_MS no es una fecha válida.');
   }
 
+  const boxSlug = parseBoxSlug(env.WODBUSTER_BOX);
+
   return {
     baseUrl: 'https://wodbuster.com',
+    boxSlug,
+    reservationsBaseUrl: `https://${boxSlug}.wodbuster.com`,
     email,
     password,
     schedule: parseSchedule(env.BOOKING_SCHEDULE),
@@ -94,4 +109,4 @@ export function loadConfig(env = process.env) {
   };
 }
 
-export { DEFAULT_SCHEDULE };
+export { DEFAULT_BOX, DEFAULT_SCHEDULE };
