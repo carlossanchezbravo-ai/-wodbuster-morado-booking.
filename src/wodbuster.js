@@ -210,6 +210,15 @@ async function confirmReservationDialog(page) {
   return false;
 }
 
+async function waitForReservationDialog(page, timeoutMs = 5_000) {
+  const deadline = Date.now() + timeoutMs;
+  while (Date.now() < deadline) {
+    if (await confirmReservationDialog(page)) return true;
+    await new Promise(resolve => setTimeout(resolve, 250));
+  }
+  return false;
+}
+
 async function reservePreference(page, preference, config) {
   const { time, className } = parsePreference(preference);
   const weekday = getWeekdayFromUrl(page.url());
@@ -257,11 +266,11 @@ async function reservePreference(page, preference, config) {
     if (dialog.type() === 'confirm') await dialog.accept();
     else await dialog.dismiss();
   });
-  await button.click();
-  await new Promise(resolve => setTimeout(resolve, 500));
-  await confirmReservationDialog(page);
+  console.log(`Pulsando directamente CROSSFIT ${time}…`);
+  await button.evaluate(element => element.click());
+  await waitForReservationDialog(page);
   await settleNetwork(page);
-  await new Promise(resolve => setTimeout(resolve, 1_500));
+  await new Promise(resolve => setTimeout(resolve, 3_000));
 
   const finalState = await verifyBooking(page, reservationKey, className, time);
   const confirmed = isBookedState(finalState);
