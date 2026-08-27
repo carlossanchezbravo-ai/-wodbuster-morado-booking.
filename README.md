@@ -9,6 +9,8 @@ Automatización personal para intentar reservar en WodBuster estas clases:
 
 El flujo se prepara cada domingo a las **14:35, hora de Madrid**, inicia sesión y espera hasta las **15:00** antes de consultar y reservar. También incluye un modo de prueba manual que no pulsa ningún botón de reserva.
 
+El centro está fijado explícitamente al subdominio de CrossFit Morado: `morado.wodbuster.com`.
+
 > Este proyecto no está afiliado a WodBuster ni a CrossFit Morado. Confirma que la automatización está permitida por las normas del centro. Si aparece un CAPTCHA, el proceso se detiene: no intenta eludirlo.
 
 ## Configuración inicial

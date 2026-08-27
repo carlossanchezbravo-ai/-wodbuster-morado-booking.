@@ -61,6 +61,7 @@ jobs:
         env:
           WODBUSTER_EMAIL: ${{ secrets.WODBUSTER_EMAIL }}
           WODBUSTER_PASSWORD: ${{ secrets.WODBUSTER_PASSWORD }}
+          WODBUSTER_BOX: 'morado'
           BOOKING_SCHEDULE: '{"tuesday":"16:00","thursday":"16:00"}'
           BOOKING_DAYS_AHEAD: '7'
           JOIN_WAITLIST: 'false'

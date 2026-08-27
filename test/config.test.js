@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { loadConfig, parseBoolean, parseSchedule } from '../src/config.js';
+import { loadConfig, parseBoolean, parseBoxSlug, parseSchedule } from '../src/config.js';
 
 test('usa martes y jueves a las 16:00 por defecto', () => {
   assert.deepEqual(parseSchedule(), {
@@ -26,6 +26,12 @@ test('interpreta booleanos explícitos', () => {
   assert.throws(() => parseBoolean('quizá'), /booleano no válido/);
 });
 
+test('usa el subdominio de CrossFit Morado', () => {
+  assert.equal(parseBoxSlug(), 'morado');
+  assert.equal(parseBoxSlug(' MORADO '), 'morado');
+  assert.throws(() => parseBoxSlug('morado.wodbuster.com'), /Centro de WodBuster no válido/);
+});
+
 test('carga una configuración completa sin exponer secretos', () => {
   const config = loadConfig({
     WODBUSTER_EMAIL: 'persona@example.com',
@@ -38,6 +44,8 @@ test('carga una configuración completa sin exponer secretos', () => {
   assert.equal(config.password, 'secreto');
   assert.equal(config.daysAhead, 7);
   assert.equal(config.dryRun, true);
+  assert.equal(config.boxSlug, 'morado');
+  assert.equal(config.reservationsBaseUrl, 'https://morado.wodbuster.com');
 });
 
 test('exige las credenciales', () => {
