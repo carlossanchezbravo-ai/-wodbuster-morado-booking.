@@ -36,6 +36,8 @@ Las credenciales **nunca deben escribirse en un archivo, una incidencia o un men
 4. Pulsa el botón verde **Run workflow**.
 5. Abre la ejecución y revisa el resumen. El modo prueba inicia sesión y localiza las clases, pero no reserva.
 
+Si las clases de la semana siguiente todavía no están publicadas, la prueba se considera correcta siempre que haya podido iniciar sesión y abrir el calendario. La ejecución real del domingo sí falla si no encuentra una clase solicitada.
+
 Una ejecución manual con `dry_run` desactivado intenta reservar inmediatamente; no espera al domingo.
 
 ## Ejecución automática
