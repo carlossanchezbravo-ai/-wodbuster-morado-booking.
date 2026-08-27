@@ -1,5 +1,5 @@
 name: Reserva puntual — hoy 17:00
-run-name: WodBuster — selección exacta CROSSFIT 17:00 del 27-08-2026
+run-name: WodBuster — intento directo CROSSFIT 17:00 del 27-08-2026
 
 on:
   push:
