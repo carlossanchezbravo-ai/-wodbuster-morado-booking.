@@ -1,0 +1,60 @@
+name: Reserva puntual — hoy 17:00
+run-name: WodBuster — reserva puntual del 27-08-2026 a las 17:00
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/reserva-hoy-1700.yml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: wodbuster-one-off-2026-08-27-1700
+  cancel-in-progress: false
+
+jobs:
+  book:
+    name: Reservar (Carlos)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Comprobar la fecha puntual
+        shell: bash
+        run: |
+          test "$(TZ=Europe/Madrid date +%F)" = '2026-08-27'
+
+      - name: Descargar código
+        uses: actions/checkout@v6
+
+      - name: Preparar Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: 24
+
+      - name: Instalar dependencias
+        env:
+          PUPPETEER_SKIP_DOWNLOAD: 'true'
+        run: npm install --no-audit --no-fund
+
+      - name: Instalar Chrome para Puppeteer
+        run: npx puppeteer browsers install chrome
+
+      - name: Comprobar el código
+        run: |
+          npm run check
+          npm test
+
+      - name: Reservar hoy a las 17:00
+        env:
+          WODBUSTER_EMAIL: ${{ secrets.WODBUSTER_EMAIL }}
+          WODBUSTER_PASSWORD: ${{ secrets.WODBUSTER_PASSWORD }}
+          WODBUSTER_BOX: 'morado'
+          BOOKING_SCHEDULE: '{"thursday":"17:00"}'
+          BOOKING_DAYS_AHEAD: '1'
+          JOIN_WAITLIST: 'false'
+          DRY_RUN: 'false'
+          BOOKING_TARGET_EPOCH_MS: ''
+        run: npm start
