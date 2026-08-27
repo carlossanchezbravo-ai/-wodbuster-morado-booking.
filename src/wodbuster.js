@@ -97,6 +97,16 @@ async function goToReservations(page, config) {
 async function buttonMatchesClassAndTime(button, className, time) {
   return button.evaluate(
     (element, expected) => {
+      const actionStates = new Set([
+        'Reservar',
+        'Entrenar',
+        'Avisar',
+        'Borrar',
+        'Cancelar',
+        'Cancelar reserva',
+        'Anular',
+        'Reservado',
+      ]);
       let current = element;
       for (let depth = 0; current && current !== document.body && depth < 8; depth += 1) {
         const text = (current.innerText ?? current.textContent ?? '')
@@ -104,7 +114,16 @@ async function buttonMatchesClassAndTime(button, className, time) {
           .trim()
           .toLowerCase();
         if (text.length > 4_000) return false;
-        if (text.includes(expected.time) && text.includes(expected.className)) return true;
+        const actionButtonCount = [...current.querySelectorAll('button, [role="button"]')]
+          .map(candidate => (candidate.textContent ?? '').replace(/\s+/g, ' ').trim())
+          .filter(candidateText => actionStates.has(candidateText)).length;
+        if (
+          actionButtonCount === 1 &&
+          text.includes(expected.time) &&
+          text.includes(expected.className)
+        ) {
+          return true;
+        }
         current = current.parentElement;
       }
       return false;
