@@ -1,6 +1,6 @@
 # Reserva WodBuster — CrossFit Morado
 
-Automatización personal para intentar reservar en WodBuster estas clases:
+Automatización personal para intentar reservar en paralelo con dos cuentas de WodBuster estas clases:
 
 | Día | Hora |
 |---|---:|
@@ -23,8 +23,10 @@ Las credenciales **nunca deben escribirse en un archivo, una incidencia o un men
 
 | Nombre | Valor |
 |---|---|
-| `WODBUSTER_EMAIL` | El correo con el que accedes a WodBuster |
-| `WODBUSTER_PASSWORD` | Tu contraseña de WodBuster |
+| `WODBUSTER_EMAIL` | Correo de la primera cuenta |
+| `WODBUSTER_PASSWORD` | Contraseña de la primera cuenta |
+| `WODBUSTER_EMAIL_2` | Correo de la segunda cuenta |
+| `WODBUSTER_PASSWORD_2` | Contraseña de la segunda cuenta |
 
 4. Abre la pestaña **Actions** del repositorio y habilita los workflows si GitHub lo solicita.
 
@@ -34,7 +36,7 @@ Las credenciales **nunca deben escribirse en un archivo, una incidencia o un men
 2. Pulsa **Run workflow**.
 3. Mantén activado **Modo prueba (`dry_run`)**.
 4. Pulsa el botón verde **Run workflow**.
-5. Abre la ejecución y revisa el resumen. El modo prueba inicia sesión y localiza las clases, pero no reserva.
+5. Abre la ejecución y revisa los dos trabajos: **Reservar (cuenta 1)** y **Reservar (cuenta 2)**. El modo prueba inicia sesión y localiza las clases, pero no reserva.
 
 Si las clases de la semana siguiente todavía no están publicadas, la prueba se considera correcta siempre que haya podido iniciar sesión y abrir el calendario. La ejecución real del domingo sí falla si no encuentra una clase solicitada.
 
@@ -42,7 +44,7 @@ Una ejecución manual con `dry_run` desactivado intenta reservar inmediatamente;
 
 ## Ejecución automática
 
-El workflow `.github/workflows/reservar.yml` se ejecuta los domingos con la zona horaria `Europe/Madrid`. GitHub puede retrasar los trabajos programados, por eso comienza 25 minutos antes. Después de iniciar sesión, el navegador espera hasta las 15:00.
+El workflow `.github/workflows/reservar.yml` se ejecuta los domingos con la zona horaria `Europe/Madrid`. GitHub puede retrasar los trabajos programados, por eso comienza 25 minutos antes. Cada cuenta inicia sesión en su propio trabajo y ambas esperan en paralelo hasta las 15:00.
 
 La lista de espera está desactivada (`JOIN_WAITLIST=false`). Si una clase está completa, la ejecución lo indicará pero no realizará esa inscripción.
 
