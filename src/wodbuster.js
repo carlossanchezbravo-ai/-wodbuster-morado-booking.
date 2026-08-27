@@ -6,6 +6,7 @@ import {
   getReservationKey,
   getWeekdayFromUrl,
   isBookedState,
+  isReservationConfirmationPrompt,
   normalizeButtonState,
   parsePreference,
 } from './domain.js';
@@ -174,7 +175,9 @@ async function findReservationButton(page, reservationKey, className, time) {
 }
 
 async function readButtonState(button) {
-  return normalizeButtonState(await button.evaluate(element => element.textContent));
+  return normalizeButtonState(
+    await button.evaluate(element => element.textContent || element.value || '')
+  );
 }
 
 async function verifyBooking(page, reservationKey, className, time) {
@@ -207,15 +210,36 @@ async function confirmReservationDialog(page) {
     }
   }
 
-  return false;
-}
+  // La interfaz móvil actual usa una hoja propia sin los selectores de modal habituales.
+  // Solo se acepta un botón "Aceptar" si un antecesor contiene el texto inequívoco
+  // de confirmación de inscripción; así se evita pulsar otros botones de la página.
+  const candidates = await page.$$(
+    'button, [role="button"], input[type="button"], input[type="submit"]'
+  );
+  for (const candidate of candidates) {
+    const visible = await candidate.evaluate(element => {
+      const style = window.getComputedStyle(element);
+      return style.display !== 'none' && style.visibility !== 'hidden';
+    });
+    if (!visible || (await readButtonState(candidate)) !== 'Aceptar') continue;
 
-async function waitForReservationDialog(page, timeoutMs = 5_000) {
-  const deadline = Date.now() + timeoutMs;
-  while (Date.now() < deadline) {
-    if (await confirmReservationDialog(page)) return true;
-    await new Promise(resolve => setTimeout(resolve, 250));
+    const ancestorTexts = await candidate.evaluate(element => {
+      const texts = [];
+      let current = element.parentElement;
+      for (let depth = 0; current && current !== document.body && depth < 8; depth += 1) {
+        texts.push(current.innerText ?? current.textContent ?? '');
+        current = current.parentElement;
+      }
+      return texts;
+    });
+    if (!ancestorTexts.some(isReservationConfirmationPrompt)) continue;
+
+    console.log('Confirmando la reserva en WodBuster (Aceptar)…');
+    await candidate.evaluate(element => element.click());
+    await settleNetwork(page);
+    return true;
   }
+
   return false;
 }
 
@@ -266,11 +290,11 @@ async function reservePreference(page, preference, config) {
     if (dialog.type() === 'confirm') await dialog.accept();
     else await dialog.dismiss();
   });
-  console.log(`Pulsando directamente CROSSFIT ${time}…`);
-  await button.evaluate(element => element.click());
-  await waitForReservationDialog(page);
+  await button.click();
+  await new Promise(resolve => setTimeout(resolve, 500));
+  await confirmReservationDialog(page);
   await settleNetwork(page);
-  await new Promise(resolve => setTimeout(resolve, 3_000));
+  await new Promise(resolve => setTimeout(resolve, 1_500));
 
   const finalState = await verifyBooking(page, reservationKey, className, time);
   const confirmed = isBookedState(finalState);
