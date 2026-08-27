@@ -6,6 +6,7 @@ import {
   getReservationKey,
   getWeekdayFromUrl,
   isBookedState,
+  isReservationConfirmationPrompt,
   parsePreference,
   shouldFailRun,
 } from '../src/domain.js';
@@ -47,6 +48,16 @@ test('reconoce la confirmación de la interfaz actual', () => {
   assert.equal(isBookedState('Cancelar'), true);
   assert.equal(isBookedState('Reservado'), true);
   assert.equal(isBookedState('Reservar'), false);
+});
+
+test('reconoce la hoja de confirmación móvil de WodBuster', () => {
+  assert.equal(
+    isReservationConfirmationPrompt(
+      'CONFIRMACIÓN REQUERIDA Estás a punto de inscribirte en una clases ¿Estás seguro?'
+    ),
+    true
+  );
+  assert.equal(isReservationConfirmationPrompt('Aceptar cookies'), false);
 });
 
 test('no entra en lista de espera salvo petición explícita', () => {
