@@ -1,0 +1,21 @@
+import { loadConfig } from './config.js';
+import { runWodBuster } from './wodbuster.js';
+
+async function main() {
+  try {
+    const config = loadConfig();
+    console.log(
+      `Modo: ${config.dryRun ? 'prueba (sin clics)' : 'reserva real'}; días: ${Object.keys(config.schedule).join(', ')}.`
+    );
+
+    const results = await runWodBuster(config);
+    if (results.length === 0 || results.some(result => !result.ok)) {
+      process.exitCode = 1;
+    }
+  } catch (error) {
+    console.error(error instanceof Error ? error.message : String(error));
+    process.exitCode = 1;
+  }
+}
+
+await main();
