@@ -35,6 +35,17 @@ export function normalizeButtonState(text) {
   return String(text ?? '').replace(/\s+/g, ' ').trim();
 }
 
+export function isReservationConfirmationPrompt(text) {
+  const normalized = normalizeButtonState(text)
+    .normalize('NFD')
+    .replace(/\p{Diacritic}/gu, '')
+    .toLowerCase();
+  return (
+    normalized.includes('confirmacion requerida') &&
+    (normalized.includes('a punto de inscribirte') || normalized.includes('estas seguro'))
+  );
+}
+
 export function isBookedState(state) {
   return ['Borrar', 'Cancelar', 'Cancelar reserva', 'Anular', 'Reservado'].includes(
     normalizeButtonState(state)
