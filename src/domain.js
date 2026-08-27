@@ -35,9 +35,16 @@ export function normalizeButtonState(text) {
   return String(text ?? '').replace(/\s+/g, ' ').trim();
 }
 
+export function isBookedState(state) {
+  return ['Borrar', 'Cancelar', 'Cancelar reserva', 'Anular', 'Reservado'].includes(
+    normalizeButtonState(state)
+  );
+}
+
 export function decideReservation(state, { dryRun, joinWaitlist }) {
   switch (normalizeButtonState(state)) {
     case 'Entrenar':
+    case 'Reservar':
       return dryRun
         ? { action: 'would-book', click: false, ok: true }
         : { action: 'book', click: true, ok: true };
@@ -49,6 +56,10 @@ export function decideReservation(state, { dryRun, joinWaitlist }) {
         ? { action: 'would-join-waitlist', click: false, ok: true }
         : { action: 'join-waitlist', click: true, ok: true };
     case 'Borrar':
+    case 'Cancelar':
+    case 'Cancelar reserva':
+    case 'Anular':
+    case 'Reservado':
       return { action: 'already-booked', click: false, ok: true };
     case 'Cambiar':
       return { action: 'conflicting-booking', click: false, ok: false };

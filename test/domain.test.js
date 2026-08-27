@@ -5,6 +5,7 @@ import {
   getISODateFromUrl,
   getReservationKey,
   getWeekdayFromUrl,
+  isBookedState,
   parsePreference,
   shouldFailRun,
 } from '../src/domain.js';
@@ -32,6 +33,20 @@ test('no hace clic durante una prueba', () => {
     click: false,
     ok: true,
   });
+});
+
+test('reconoce el botón Reservar de la interfaz actual', () => {
+  assert.deepEqual(decideReservation('Reservar', { dryRun: false, joinWaitlist: false }), {
+    action: 'book',
+    click: true,
+    ok: true,
+  });
+});
+
+test('reconoce la confirmación de la interfaz actual', () => {
+  assert.equal(isBookedState('Cancelar'), true);
+  assert.equal(isBookedState('Reservado'), true);
+  assert.equal(isBookedState('Reservar'), false);
 });
 
 test('no entra en lista de espera salvo petición explícita', () => {

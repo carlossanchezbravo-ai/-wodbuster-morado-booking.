@@ -5,6 +5,7 @@ import {
   getISODateFromUrl,
   getReservationKey,
   getWeekdayFromUrl,
+  isBookedState,
   normalizeButtonState,
   parsePreference,
 } from './domain.js';
@@ -93,10 +94,28 @@ async function goToReservations(page, config) {
   }
 }
 
-async function findReservationButton(page, reservationKey, className) {
+async function buttonMatchesClassAndTime(button, className, time) {
+  return button.evaluate(
+    (element, expected) => {
+      let current = element;
+      for (let depth = 0; current && current !== document.body && depth < 8; depth += 1) {
+        const text = (current.innerText ?? current.textContent ?? '')
+          .replace(/\s+/g, ' ')
+          .trim()
+          .toLowerCase();
+        if (text.length > 4_000) return false;
+        if (text.includes(expected.time) && text.includes(expected.className)) return true;
+        current = current.parentElement;
+      }
+      return false;
+    },
+    { className: className.toLowerCase(), time }
+  );
+}
+
+async function findReservationButton(page, reservationKey, className, time) {
   const buttons = await page.$$(`div[data-magellan-destination="${reservationKey}"] button`);
-  if (buttons.length === 0) return null;
-  if (!className) return buttons[0];
+  if (!className && buttons.length > 0) return buttons[0];
 
   for (const button of buttons) {
     const sectionText = await button.evaluate(element => {
@@ -108,6 +127,29 @@ async function findReservationButton(page, reservationKey, className) {
     }
   }
 
+  if (!className) return null;
+
+  const currentButtons = await page.$$('button, [role="button"]');
+  const actionStates = new Set([
+    'Reservar',
+    'Entrenar',
+    'Avisar',
+    'Borrar',
+    'Cancelar',
+    'Cancelar reserva',
+    'Anular',
+    'Reservado',
+  ]);
+
+  for (const button of currentButtons) {
+    const visible = await button.evaluate(element => {
+      const style = window.getComputedStyle(element);
+      return style.display !== 'none' && style.visibility !== 'hidden';
+    });
+    if (!visible || !actionStates.has(await readButtonState(button))) continue;
+    if (await buttonMatchesClassAndTime(button, className, time)) return button;
+  }
+
   // No se elige la primera actividad como alternativa: podría reservar una clase incorrecta.
   return null;
 }
@@ -116,8 +158,8 @@ async function readButtonState(button) {
   return normalizeButtonState(await button.evaluate(element => element.textContent));
 }
 
-async function verifyBooking(page, reservationKey, className) {
-  const updatedButton = await findReservationButton(page, reservationKey, className);
+async function verifyBooking(page, reservationKey, className, time) {
+  const updatedButton = await findReservationButton(page, reservationKey, className, time);
   if (!updatedButton) return null;
   return readButtonState(updatedButton);
 }
@@ -127,7 +169,7 @@ async function reservePreference(page, preference, config) {
   const weekday = getWeekdayFromUrl(page.url());
   const date = getISODateFromUrl(page.url());
   const reservationKey = getReservationKey(time);
-  const button = await findReservationButton(page, reservationKey, className);
+  const button = await findReservationButton(page, reservationKey, className, time);
 
   if (!button) {
     return {
@@ -169,8 +211,8 @@ async function reservePreference(page, preference, config) {
   await settleNetwork(page);
   await new Promise(resolve => setTimeout(resolve, 800));
 
-  const finalState = await verifyBooking(page, reservationKey, className);
-  const confirmed = finalState === 'Borrar';
+  const finalState = await verifyBooking(page, reservationKey, className, time);
+  const confirmed = isBookedState(finalState);
   if (!confirmed) {
     return {
       date,

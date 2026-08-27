@@ -71,14 +71,14 @@ jobs:
           TRIGGER_CRON: ${{ github.event.schedule }}
         run: |
           if [[ "$EVENT_NAME" == "workflow_dispatch" ]]; then
-            echo 'schedule={"tuesday":"16:00","thursday":"16:00"}' >> "$GITHUB_OUTPUT"
+            echo 'schedule={"tuesday":"16:00|CROSSFIT","thursday":"16:00|CROSSFIT"}' >> "$GITHUB_OUTPUT"
             echo 'label=martes y jueves' >> "$GITHUB_OUTPUT"
           elif [[ "$TRIGGER_CRON" == "35 14 * * 0" ]]; then
-            echo 'schedule={"tuesday":"16:00"}' >> "$GITHUB_OUTPUT"
+            echo 'schedule={"tuesday":"16:00|CROSSFIT"}' >> "$GITHUB_OUTPUT"
             echo 'opening_time=15:00:00' >> "$GITHUB_OUTPUT"
             echo 'label=martes' >> "$GITHUB_OUTPUT"
           elif [[ "$TRIGGER_CRON" == "5 22 * * 0" ]]; then
-            echo 'schedule={"thursday":"16:00"}' >> "$GITHUB_OUTPUT"
+            echo 'schedule={"thursday":"16:00|CROSSFIT"}' >> "$GITHUB_OUTPUT"
             echo 'opening_time=22:30:00' >> "$GITHUB_OUTPUT"
             echo 'label=jueves' >> "$GITHUB_OUTPUT"
           else
