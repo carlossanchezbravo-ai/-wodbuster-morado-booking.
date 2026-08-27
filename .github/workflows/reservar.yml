@@ -23,8 +23,20 @@ concurrency:
 
 jobs:
   book:
+    name: Reservar (${{ matrix.account.label }})
     runs-on: ubuntu-latest
     timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      max-parallel: 2
+      matrix:
+        account:
+          - label: cuenta 1
+            email_secret: WODBUSTER_EMAIL
+            password_secret: WODBUSTER_PASSWORD
+          - label: cuenta 2
+            email_secret: WODBUSTER_EMAIL_2
+            password_secret: WODBUSTER_PASSWORD_2
 
     steps:
       - name: Descargar código
@@ -59,8 +71,8 @@ jobs:
 
       - name: Reservar martes y jueves a las 16:00
         env:
-          WODBUSTER_EMAIL: ${{ secrets.WODBUSTER_EMAIL }}
-          WODBUSTER_PASSWORD: ${{ secrets.WODBUSTER_PASSWORD }}
+          WODBUSTER_EMAIL: ${{ secrets[matrix.account.email_secret] }}
+          WODBUSTER_PASSWORD: ${{ secrets[matrix.account.password_secret] }}
           WODBUSTER_BOX: 'morado'
           BOOKING_SCHEDULE: '{"tuesday":"16:00","thursday":"16:00"}'
           BOOKING_DAYS_AHEAD: '7'
