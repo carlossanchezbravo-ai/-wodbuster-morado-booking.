@@ -1,5 +1,5 @@
 name: Reserva puntual — hoy 17:00
-run-name: WodBuster — reserva puntual del 27-08-2026 a las 17:00
+run-name: WodBuster — confirmación puntual del 27-08-2026 a las 17:00
 
 on:
   push:

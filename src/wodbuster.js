@@ -164,6 +164,33 @@ async function verifyBooking(page, reservationKey, className, time) {
   return readButtonState(updatedButton);
 }
 
+async function confirmReservationDialog(page) {
+  const containers = await page.$$(
+    'dialog[open], [role="dialog"], .modal.show, .modal.is-open, .reveal, .swal2-popup'
+  );
+  const confirmationTexts = new Set(['Reservar', 'Confirmar', 'Aceptar', 'Sí', 'Si']);
+
+  for (const container of containers) {
+    const visible = await container.evaluate(element => {
+      const style = window.getComputedStyle(element);
+      return style.display !== 'none' && style.visibility !== 'hidden';
+    });
+    if (!visible) continue;
+
+    const buttons = await container.$$('button, [role="button"]');
+    for (const candidate of buttons) {
+      const text = await readButtonState(candidate);
+      if (!confirmationTexts.has(text)) continue;
+      console.log(`Confirmando la reserva en WodBuster (${text})…`);
+      await candidate.click();
+      await settleNetwork(page);
+      return true;
+    }
+  }
+
+  return false;
+}
+
 async function reservePreference(page, preference, config) {
   const { time, className } = parsePreference(preference);
   const weekday = getWeekdayFromUrl(page.url());
@@ -207,9 +234,15 @@ async function reservePreference(page, preference, config) {
     };
   }
 
+  page.once('dialog', async dialog => {
+    if (dialog.type() === 'confirm') await dialog.accept();
+    else await dialog.dismiss();
+  });
   await button.click();
+  await new Promise(resolve => setTimeout(resolve, 500));
+  await confirmReservationDialog(page);
   await settleNetwork(page);
-  await new Promise(resolve => setTimeout(resolve, 800));
+  await new Promise(resolve => setTimeout(resolve, 1_500));
 
   const finalState = await verifyBooking(page, reservationKey, className, time);
   const confirmed = isBookedState(finalState);
