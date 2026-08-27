@@ -6,6 +6,7 @@ import {
   getReservationKey,
   getWeekdayFromUrl,
   parsePreference,
+  shouldFailRun,
 } from '../src/domain.js';
 
 test('convierte las 16:00 en la clave de WodBuster', () => {
@@ -47,4 +48,20 @@ test('trata una reserva existente como resultado correcto', () => {
     click: false,
     ok: true,
   });
+});
+
+test('una prueba no falla si las clases todavía no están visibles', () => {
+  const results = [
+    { status: 'slot-not-found', ok: false },
+    { status: 'day-not-visible', ok: false },
+  ];
+
+  assert.equal(shouldFailRun(results, true), false);
+  assert.equal(shouldFailRun(results, false), true);
+});
+
+test('una prueba sigue fallando ante un error técnico', () => {
+  assert.equal(shouldFailRun([{ status: 'error', ok: false }], true), true);
+  assert.equal(shouldFailRun([{ status: 'unavailable', ok: false }], true), true);
+  assert.equal(shouldFailRun([], true), true);
 });

@@ -58,3 +58,11 @@ export function decideReservation(state, { dryRun, joinWaitlist }) {
       return { action: 'unavailable', click: false, ok: false };
   }
 }
+
+export function shouldFailRun(results, dryRun) {
+  if (results.length === 0) return true;
+  if (!dryRun) return results.some(result => !result.ok);
+
+  const blockingStatuses = new Set(['error', 'unavailable', 'unconfirmed']);
+  return results.some(result => blockingStatuses.has(result.status));
+}
