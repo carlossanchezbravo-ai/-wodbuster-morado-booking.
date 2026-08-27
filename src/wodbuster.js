@@ -235,7 +235,7 @@ async function confirmReservationDialog(page) {
     if (!ancestorTexts.some(isReservationConfirmationPrompt)) continue;
 
     console.log('Confirmando la reserva en WodBuster (Aceptar)…');
-    await candidate.evaluate(element => element.click());
+    await candidate.click();
     await settleNetwork(page);
     return true;
   }
@@ -306,6 +306,21 @@ async function reservePreference(page, preference, config) {
       status: 'unconfirmed',
       ok: false,
       message: `WodBuster no confirmó la operación (estado final: ${finalState || 'no disponible'}).`,
+    };
+  }
+
+  console.log('Recargando WodBuster para comprobar que la reserva quedó guardada…');
+  await page.reload({ waitUntil: 'domcontentloaded', timeout: config.navigationTimeoutMs });
+  await settleNetwork(page);
+  const persistedState = await verifyBooking(page, reservationKey, className, time);
+  if (!isBookedState(persistedState)) {
+    return {
+      date,
+      weekday,
+      time,
+      status: 'unconfirmed',
+      ok: false,
+      message: `La reserva apareció en pantalla, pero no persistió al recargar (estado: ${persistedState || 'no disponible'}).`,
     };
   }
 
