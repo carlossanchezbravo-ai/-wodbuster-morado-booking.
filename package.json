@@ -1,0 +1,18 @@
+{
+  "name": "wodbuster-morado-booking",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Reserva semanal de clases en WodBuster para CrossFit Morado",
+  "scripts": {
+    "start": "node src/index.js",
+    "check": "node --check src/config.js && node --check src/domain.js && node --check src/time.js && node --check src/wodbuster.js && node --check src/index.js",
+    "test": "node --test"
+  },
+  "engines": {
+    "node": ">=22"
+  },
+  "dependencies": {
+    "puppeteer": "25.0.4"
+  }
+}

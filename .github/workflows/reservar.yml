@@ -1,0 +1,69 @@
+name: Reserva WodBuster
+run-name: "WodBuster — ${{ github.event_name == 'workflow_dispatch' && 'ejecución manual' || 'domingo 15:00' }}"
+
+on:
+  schedule:
+    # Se prepara con 25 minutos de margen y el script espera hasta las 15:00.
+    - cron: '35 14 * * 0'
+      timezone: Europe/Madrid
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: 'Modo prueba: inicia sesión y comprueba las clases sin reservar'
+        type: boolean
+        required: true
+        default: true
+
+permissions:
+  contents: read
+
+concurrency:
+  group: wodbuster-reservation
+  cancel-in-progress: false
+
+jobs:
+  book:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+
+    steps:
+      - name: Descargar código
+        uses: actions/checkout@v6
+
+      - name: Preparar Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: 24
+
+      - name: Instalar dependencias
+        env:
+          PUPPETEER_SKIP_DOWNLOAD: 'true'
+        run: npm install --no-audit --no-fund
+
+      - name: Instalar Chrome para Puppeteer
+        run: npx puppeteer browsers install chrome
+
+      - name: Comprobar el código
+        run: |
+          npm run check
+          npm test
+
+      - name: Calcular la apertura del domingo
+        if: github.event_name == 'schedule'
+        id: opening
+        shell: bash
+        run: |
+          local_date="$(TZ=Europe/Madrid date +%F)"
+          target_seconds="$(TZ=Europe/Madrid date --date="$local_date 15:00:00" +%s)"
+          echo "target_ms=$((target_seconds * 1000))" >> "$GITHUB_OUTPUT"
+
+      - name: Reservar martes y jueves a las 16:00
+        env:
+          WODBUSTER_EMAIL: ${{ secrets.WODBUSTER_EMAIL }}
+          WODBUSTER_PASSWORD: ${{ secrets.WODBUSTER_PASSWORD }}
+          BOOKING_SCHEDULE: '{"tuesday":"16:00","thursday":"16:00"}'
+          BOOKING_DAYS_AHEAD: '7'
+          JOIN_WAITLIST: 'false'
+          DRY_RUN: ${{ github.event_name == 'workflow_dispatch' && inputs.dry_run && 'true' || 'false' }}
+          BOOKING_TARGET_EPOCH_MS: ${{ steps.opening.outputs.target_ms || '' }}
+        run: npm start
