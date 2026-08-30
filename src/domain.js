@@ -38,8 +38,26 @@ export function getNextReservationUrl(url) {
   return nextUrl.href;
 }
 
+export function getReservationUrlForWeekday(url, targetWeekday, daysAhead = 7) {
+  let candidateUrl = url;
+  for (let offset = 0; offset < daysAhead; offset += 1) {
+    if (getWeekdayFromUrl(candidateUrl) === targetWeekday) return candidateUrl;
+    candidateUrl = getNextReservationUrl(candidateUrl);
+  }
+  return null;
+}
+
 export function normalizeButtonState(text) {
   return String(text ?? '').replace(/\s+/g, ' ').trim();
+}
+
+export function matchesExactClassCard(context, className, time) {
+  const text = normalizeButtonState(context?.text).toLowerCase();
+  return (
+    context?.actionButtonCount === 1 &&
+    text.includes(normalizeButtonState(className).toLowerCase()) &&
+    text.includes(normalizeButtonState(time).toLowerCase())
+  );
 }
 
 export function isReservationConfirmationPrompt(text) {
