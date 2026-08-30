@@ -116,6 +116,8 @@ async function buttonMatchesClassAndTime(button, className, time) {
         'Cancelar reserva',
         'Anular',
         'Reservado',
+        'Cambiar',
+        'Finalizada',
       ]);
       const matches = [];
       let current = element;
@@ -151,6 +153,8 @@ async function findReservationButton(page, reservationKey, className, time) {
     'Cancelar reserva',
     'Anular',
     'Reservado',
+    'Cambiar',
+    'Finalizada',
   ]);
 
   for (const button of currentButtons) {
