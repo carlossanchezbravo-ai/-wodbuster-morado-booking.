@@ -1,0 +1,70 @@
+name: Recuperación puntual — martes 16:00
+run-name: WodBuster — recuperar reserva del martes para las dos cuentas
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/recuperar-martes.yml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: wodbuster-recovery-tuesday-2026-09-01
+  cancel-in-progress: false
+
+jobs:
+  book:
+    name: Reservar martes (${{ matrix.account.label }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      max-parallel: 2
+      matrix:
+        account:
+          - label: cuenta 1
+            email_secret: WODBUSTER_EMAIL
+            password_secret: WODBUSTER_PASSWORD
+          - label: cuenta 2
+            email_secret: WODBUSTER_EMAIL_2
+            password_secret: WODBUSTER_PASSWORD_2
+
+    steps:
+      - name: Comprobar la fecha de recuperación
+        shell: bash
+        run: test "$(TZ=Europe/Madrid date +%F)" = '2026-08-30'
+
+      - name: Descargar código
+        uses: actions/checkout@v6
+
+      - name: Preparar Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: 24
+
+      - name: Instalar dependencias
+        env:
+          PUPPETEER_SKIP_DOWNLOAD: 'true'
+        run: npm install --no-audit --no-fund
+
+      - name: Instalar Chrome para Puppeteer
+        run: npx puppeteer browsers install chrome
+
+      - name: Comprobar el código
+        run: |
+          npm run check
+          npm test
+
+      - name: Reservar CROSSFIT del martes a las 16:00
+        env:
+          WODBUSTER_EMAIL: ${{ secrets[matrix.account.email_secret] }}
+          WODBUSTER_PASSWORD: ${{ secrets[matrix.account.password_secret] }}
+          WODBUSTER_BOX: 'morado'
+          BOOKING_SCHEDULE: '{"tuesday":"16:00|CROSSFIT"}'
+          BOOKING_DAYS_AHEAD: '7'
+          JOIN_WAITLIST: 'false'
+          DRY_RUN: 'false'
+          BOOKING_TARGET_EPOCH_MS: ''
+        run: npm start
