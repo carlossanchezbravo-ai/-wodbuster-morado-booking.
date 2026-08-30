@@ -1,11 +1,8 @@
 name: Recuperación puntual — martes 16:00
-run-name: WodBuster — recuperar reserva del martes para las dos cuentas
+run-name: WodBuster — recuperación del martes archivada
 
 on:
-  push:
-    branches: [main]
-    paths:
-      - '.github/workflows/recuperar-martes.yml'
+  workflow_dispatch:
 
 permissions:
   contents: read
