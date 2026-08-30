@@ -1,11 +1,8 @@
 name: Recuperación puntual — martes 16:00
-run-name: WodBuster — reservar CROSSFIT exacto para la cuenta 1
+run-name: WodBuster — recuperación del martes archivada
 
 on:
-  push:
-    branches: [main]
-    paths:
-      - '.github/workflows/recuperar-martes.yml'
+  workflow_dispatch:
 
 permissions:
   contents: read
