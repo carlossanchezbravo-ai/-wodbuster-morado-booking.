@@ -1,5 +1,5 @@
 name: Recuperación puntual — martes 16:00
-run-name: WodBuster — validar CROSSFIT exacto sin tocar OPEN
+run-name: WodBuster — reservar CROSSFIT exacto para la cuenta 1
 
 on:
   push:
@@ -27,9 +27,6 @@ jobs:
           - label: cuenta 1
             email_secret: WODBUSTER_EMAIL
             password_secret: WODBUSTER_PASSWORD
-          - label: cuenta 2
-            email_secret: WODBUSTER_EMAIL_2
-            password_secret: WODBUSTER_PASSWORD_2
 
     steps:
       - name: Comprobar la fecha de recuperación
@@ -65,6 +62,6 @@ jobs:
           BOOKING_SCHEDULE: '{"tuesday":"16:00|CROSSFIT"}'
           BOOKING_DAYS_AHEAD: '7'
           JOIN_WAITLIST: 'false'
-          DRY_RUN: 'true'
+          DRY_RUN: 'false'
           BOOKING_TARGET_EPOCH_MS: ''
         run: npm start
