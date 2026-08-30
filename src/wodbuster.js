@@ -3,11 +3,12 @@ import { launch } from 'puppeteer';
 import {
   decideReservation,
   getISODateFromUrl,
-  getNextReservationUrl,
   getReservationKey,
+  getReservationUrlForWeekday,
   getWeekdayFromUrl,
   isBookedState,
   isReservationConfirmationPrompt,
+  matchesExactClassCard,
   normalizeButtonState,
   parsePreference,
 } from './domain.js';
@@ -70,14 +71,22 @@ async function login(page, config) {
   }
 }
 
-async function goToReservations(page, config) {
+async function goToReservations(page, config, targetWeekday) {
   const today = new Date();
   today.setUTCHours(0, 0, 0, 0);
   const timestamp = Math.floor(today.getTime() / 1000);
   const reservationsUrl = new URL('/athlete/reservas.aspx', config.reservationsBaseUrl);
   reservationsUrl.searchParams.set('t', String(timestamp));
+  const targetUrl = getReservationUrlForWeekday(
+    reservationsUrl.href,
+    targetWeekday,
+    config.daysAhead
+  );
+  if (!targetUrl) {
+    throw new Error(`No se pudo calcular la fecha de ${targetWeekday}.`);
+  }
 
-  await page.goto(reservationsUrl.href, {
+  await page.goto(targetUrl, {
     waitUntil: 'domcontentloaded',
     timeout: config.navigationTimeoutMs,
   });
@@ -87,7 +96,8 @@ async function goToReservations(page, config) {
   if (
     finalUrl.hostname !== new URL(config.reservationsBaseUrl).hostname ||
     !/\/athlete\/reservas\.aspx$/i.test(finalUrl.pathname) ||
-    !finalUrl.searchParams.get('t')
+    !finalUrl.searchParams.get('t') ||
+    getWeekdayFromUrl(finalUrl.href) !== targetWeekday
   ) {
     throw new Error(
       `WodBuster no abrió las reservas de CrossFit Morado (ruta final: ${finalUrl.pathname}).`
@@ -96,8 +106,7 @@ async function goToReservations(page, config) {
 }
 
 async function buttonMatchesClassAndTime(button, className, time) {
-  return button.evaluate(
-    (element, expected) => {
+  const contexts = await button.evaluate(element => {
       const actionStates = new Set([
         'Reservar',
         'Entrenar',
@@ -108,44 +117,27 @@ async function buttonMatchesClassAndTime(button, className, time) {
         'Anular',
         'Reservado',
       ]);
+      const matches = [];
       let current = element;
       for (let depth = 0; current && current !== document.body && depth < 8; depth += 1) {
         const text = (current.innerText ?? current.textContent ?? '')
           .replace(/\s+/g, ' ')
-          .trim()
-          .toLowerCase();
-        if (text.length > 4_000) return false;
+          .trim();
+        if (text.length > 4_000) break;
         const actionButtonCount = [...current.querySelectorAll('button, [role="button"]')]
           .map(candidate => (candidate.textContent ?? '').replace(/\s+/g, ' ').trim())
           .filter(candidateText => actionStates.has(candidateText)).length;
-        if (
-          actionButtonCount === 1 &&
-          text.includes(expected.time) &&
-          text.includes(expected.className)
-        ) {
-          return true;
-        }
+        matches.push({ text, actionButtonCount });
         current = current.parentElement;
       }
-      return false;
-    },
-    { className: className.toLowerCase(), time }
-  );
+      return matches;
+    });
+  return contexts.some(context => matchesExactClassCard(context, className, time));
 }
 
 async function findReservationButton(page, reservationKey, className, time) {
   const buttons = await page.$$(`div[data-magellan-destination="${reservationKey}"] button`);
   if (!className && buttons.length > 0) return buttons[0];
-
-  for (const button of buttons) {
-    const sectionText = await button.evaluate(element => {
-      const section = element.closest('[data-magellan-destination]');
-      return section?.textContent ?? '';
-    });
-    if (sectionText.toLowerCase().includes(className.toLowerCase())) {
-      return button;
-    }
-  }
 
   if (!className) return null;
 
@@ -334,54 +326,20 @@ async function reservePreference(page, preference, config) {
   };
 }
 
-async function goToNextDay(page, config) {
-  const dateBefore = getISODateFromUrl(page.url());
-  const nextUrl = getNextReservationUrl(page.url());
-  await page.goto(nextUrl, {
-    waitUntil: 'domcontentloaded',
-    timeout: config.navigationTimeoutMs,
-  });
-  await settleNetwork(page);
-  return getISODateFromUrl(page.url()) !== dateBefore;
-}
-
 async function processReservations(page, config) {
   const results = [];
-  const seenScheduledDays = new Set();
-
-  for (let index = 0; index < config.daysAhead; index += 1) {
-    const weekday = getWeekdayFromUrl(page.url());
-    const preference = config.schedule[weekday];
-
-    if (preference) {
-      seenScheduledDays.add(weekday);
-      try {
-        results.push(await reservePreference(page, preference, config));
-      } catch (error) {
-        results.push({
-          date: getISODateFromUrl(page.url()),
-          weekday,
-          time: parsePreference(preference).time,
-          status: 'error',
-          ok: false,
-          message: error instanceof Error ? error.message : String(error),
-        });
-      }
-    }
-
-    if (index === config.daysAhead - 1) break;
-    if (!(await goToNextDay(page, config))) break;
-  }
-
   for (const [weekday, preference] of Object.entries(config.schedule)) {
-    if (!seenScheduledDays.has(weekday)) {
+    try {
+      await goToReservations(page, config, weekday);
+      results.push(await reservePreference(page, preference, config));
+    } catch (error) {
       results.push({
-        date: '—',
+        date: /\/athlete\/reservas\.aspx/i.test(page.url()) ? getISODateFromUrl(page.url()) : '—',
         weekday,
         time: parsePreference(preference).time,
-        status: 'day-not-visible',
+        status: 'error',
         ok: false,
-        message: 'WodBuster no mostró este día dentro del horizonte disponible.',
+        message: error instanceof Error ? error.message : String(error),
       });
     }
   }
@@ -428,7 +386,6 @@ export async function runWodBuster(config) {
     await login(page, config);
     await waitUntil(config.targetEpochMs, { log: message => console.log(message) });
     console.log('Consultando las clases disponibles…');
-    await goToReservations(page, config);
 
     const results = await processReservations(page, config);
     writeSummary(results);
