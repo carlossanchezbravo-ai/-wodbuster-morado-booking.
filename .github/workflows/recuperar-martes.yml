@@ -1,8 +1,11 @@
 name: Recuperación puntual — martes 16:00
-run-name: WodBuster — recuperación del martes archivada
+run-name: WodBuster — validar CROSSFIT exacto sin tocar OPEN
 
 on:
-  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/recuperar-martes.yml'
 
 permissions:
   contents: read
@@ -62,6 +65,6 @@ jobs:
           BOOKING_SCHEDULE: '{"tuesday":"16:00|CROSSFIT"}'
           BOOKING_DAYS_AHEAD: '7'
           JOIN_WAITLIST: 'false'
-          DRY_RUN: 'false'
+          DRY_RUN: 'true'
           BOOKING_TARGET_EPOCH_MS: ''
         run: npm start
