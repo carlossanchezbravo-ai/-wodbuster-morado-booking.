@@ -3,6 +3,7 @@ import { launch } from 'puppeteer';
 import {
   decideReservation,
   getISODateFromUrl,
+  getNextReservationUrl,
   getReservationKey,
   getWeekdayFromUrl,
   isBookedState,
@@ -18,7 +19,6 @@ const SELECTORS = Object.freeze({
   submit: '#body_body_CtlLogin_CtlAceptar',
   forgetDevice: '#body_body_CtlUp label.button:nth-of-type(2)',
   title: '.mainTitle',
-  nextDay: 'a.next',
 });
 
 async function settleNetwork(page, timeout = 5_000) {
@@ -334,12 +334,13 @@ async function reservePreference(page, preference, config) {
   };
 }
 
-async function goToNextDay(page) {
-  const button = await page.$(SELECTORS.nextDay);
-  if (!button) return false;
-
+async function goToNextDay(page, config) {
   const dateBefore = getISODateFromUrl(page.url());
-  await button.click();
+  const nextUrl = getNextReservationUrl(page.url());
+  await page.goto(nextUrl, {
+    waitUntil: 'domcontentloaded',
+    timeout: config.navigationTimeoutMs,
+  });
   await settleNetwork(page);
   return getISODateFromUrl(page.url()) !== dateBefore;
 }
@@ -369,7 +370,7 @@ async function processReservations(page, config) {
     }
 
     if (index === config.daysAhead - 1) break;
-    if (!(await goToNextDay(page))) break;
+    if (!(await goToNextDay(page, config))) break;
   }
 
   for (const [weekday, preference] of Object.entries(config.schedule)) {
