@@ -5,9 +5,11 @@ import {
   getISODateFromUrl,
   getNextReservationUrl,
   getReservationKey,
+  getReservationUrlForWeekday,
   getWeekdayFromUrl,
   isBookedState,
   isReservationConfirmationPrompt,
+  matchesExactClassCard,
   parsePreference,
   shouldFailRun,
 } from '../src/domain.js';
@@ -33,6 +35,43 @@ test('construye directamente la URL del día siguiente', () => {
   assert.equal(
     getNextReservationUrl('https://morado.wodbuster.com/athlete/reservas.aspx?t=1788048000'),
     'https://morado.wodbuster.com/athlete/reservas.aspx?t=1788134400'
+  );
+});
+
+test('abre directamente el martes desde el domingo', () => {
+  assert.equal(
+    getReservationUrlForWeekday(
+      'https://morado.wodbuster.com/athlete/reservas.aspx?t=1788048000',
+      'tuesday'
+    ),
+    'https://morado.wodbuster.com/athlete/reservas.aspx?t=1788220800'
+  );
+});
+
+test('solo acepta el botón de la tarjeta exacta de CROSSFIT', () => {
+  assert.equal(
+    matchesExactClassCard(
+      { text: 'CROSSFIT * 16:00 Avisar', actionButtonCount: 1 },
+      'CROSSFIT',
+      '16:00'
+    ),
+    true
+  );
+  assert.equal(
+    matchesExactClassCard(
+      { text: 'OPEN 1H 16:00 Reservar', actionButtonCount: 1 },
+      'CROSSFIT',
+      '16:00'
+    ),
+    false
+  );
+  assert.equal(
+    matchesExactClassCard(
+      { text: 'CROSSFIT 16:00 Avisar OPEN 1H 16:00 Reservar', actionButtonCount: 2 },
+      'CROSSFIT',
+      '16:00'
+    ),
+    false
   );
 });
 
