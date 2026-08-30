@@ -3,6 +3,7 @@ import test from 'node:test';
 import {
   decideReservation,
   getISODateFromUrl,
+  getNextReservationUrl,
   getReservationKey,
   getWeekdayFromUrl,
   isBookedState,
@@ -26,6 +27,13 @@ test('extrae fecha y día de la URL de reservas', () => {
   const url = 'https://box.example/athlete/reservas.aspx?t=1787616000';
   assert.equal(getISODateFromUrl(url), '2026-08-25');
   assert.equal(getWeekdayFromUrl(url), 'tuesday');
+});
+
+test('construye directamente la URL del día siguiente', () => {
+  assert.equal(
+    getNextReservationUrl('https://morado.wodbuster.com/athlete/reservas.aspx?t=1788048000'),
+    'https://morado.wodbuster.com/athlete/reservas.aspx?t=1788134400'
+  );
 });
 
 test('no hace clic durante una prueba', () => {
