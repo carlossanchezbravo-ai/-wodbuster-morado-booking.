@@ -31,6 +31,13 @@ export function getWeekdayFromUrl(url) {
     .toLowerCase();
 }
 
+export function getNextReservationUrl(url) {
+  const nextUrl = new URL(url);
+  const nextTimestamp = getTimestampFromReservationUrl(url) + 86_400;
+  nextUrl.searchParams.set('t', String(nextTimestamp));
+  return nextUrl.href;
+}
+
 export function normalizeButtonState(text) {
   return String(text ?? '').replace(/\s+/g, ' ').trim();
 }
