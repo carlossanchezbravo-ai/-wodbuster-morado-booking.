@@ -9,6 +9,9 @@ on:
     # Jueves: se prepara con 25 minutos de margen y espera hasta las 22:30.
     - cron: '5 22 * * 0'
       timezone: Europe/Madrid
+    # Viernes: se prepara el lunes con 25 minutos de margen y espera hasta las 22:30.
+    - cron: '5 22 * * 1'
+      timezone: Europe/Madrid
   workflow_dispatch:
     inputs:
       dry_run:
@@ -71,8 +74,8 @@ jobs:
           TRIGGER_CRON: ${{ github.event.schedule }}
         run: |
           if [[ "$EVENT_NAME" == "workflow_dispatch" ]]; then
-            echo 'schedule={"tuesday":"16:00|CROSSFIT","thursday":"16:00|CROSSFIT"}' >> "$GITHUB_OUTPUT"
-            echo 'label=martes y jueves' >> "$GITHUB_OUTPUT"
+            echo 'schedule={"tuesday":"16:00|CROSSFIT","thursday":"16:00|CROSSFIT","friday":"16:00|CROSSFIT"}' >> "$GITHUB_OUTPUT"
+            echo 'label=martes, jueves y viernes' >> "$GITHUB_OUTPUT"
           elif [[ "$TRIGGER_CRON" == "35 14 * * 0" ]]; then
             echo 'schedule={"tuesday":"16:00|CROSSFIT"}' >> "$GITHUB_OUTPUT"
             echo 'opening_time=15:00:00' >> "$GITHUB_OUTPUT"
@@ -81,12 +84,16 @@ jobs:
             echo 'schedule={"thursday":"16:00|CROSSFIT"}' >> "$GITHUB_OUTPUT"
             echo 'opening_time=22:30:00' >> "$GITHUB_OUTPUT"
             echo 'label=jueves' >> "$GITHUB_OUTPUT"
+          elif [[ "$TRIGGER_CRON" == "5 22 * * 1" ]]; then
+            echo 'schedule={"friday":"16:00|CROSSFIT"}' >> "$GITHUB_OUTPUT"
+            echo 'opening_time=22:30:00' >> "$GITHUB_OUTPUT"
+            echo 'label=viernes' >> "$GITHUB_OUTPUT"
           else
             echo "Disparador no reconocido: $TRIGGER_CRON" >&2
             exit 1
           fi
 
-      - name: Calcular la apertura del domingo
+      - name: Calcular la apertura programada
         if: github.event_name == 'schedule'
         id: opening
         shell: bash
