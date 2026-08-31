@@ -2,12 +2,13 @@
 
 Automatización personal para intentar reservar en paralelo con dos cuentas de WodBuster estas clases:
 
-| Día | Clase | Apertura | Preparación automática |
-|---|---:|---:|---:|
-| Martes | 16:00 | Domingo 15:00 | Domingo 14:35 |
-| Jueves | 16:00 | Domingo 22:30 | Domingo 22:05 |
+| Día | Actividad | Hora | Apertura | Preparación automática |
+|---|---|---:|---:|---:|
+| Martes | CROSSFIT | 16:00 | Domingo 15:00 | Domingo 14:35 |
+| Jueves | CROSSFIT | 16:00 | Domingo 22:30 | Domingo 22:05 |
+| Viernes | CROSSFIT | 16:00 | Lunes 22:30 | Lunes 22:05 |
 
-El martes y el jueves se reservan en ejecuciones separadas porque sus aperturas son distintas. Cada ejecución inicia sesión con 25 minutos de margen y espera hasta la hora exacta antes de consultar y reservar. También incluye un modo de prueba manual que no pulsa ningún botón de reserva.
+El martes, el jueves y el viernes se reservan en ejecuciones separadas según su día y hora de apertura. Cada ejecución inicia sesión con 25 minutos de margen y espera hasta la hora exacta antes de consultar y reservar. También incluye un modo de prueba manual que no pulsa ningún botón de reserva.
 
 El centro está fijado explícitamente al subdominio de CrossFit Morado: `morado.wodbuster.com`.
 
@@ -44,12 +45,13 @@ Una ejecución manual con `dry_run` desactivado intenta reservar inmediatamente;
 
 ## Ejecución automática
 
-El workflow `.github/workflows/reservar.yml` usa la zona horaria `Europe/Madrid` y se ejecuta dos veces los domingos:
+El workflow `.github/workflows/reservar.yml` usa la zona horaria `Europe/Madrid` y se ejecuta en tres momentos semanales:
 
 - A las **14:35**, las dos cuentas inician sesión en paralelo y esperan hasta las **15:00** para intentar reservar el martes.
-- A las **22:05**, las dos cuentas inician sesión en paralelo y esperan hasta las **22:30** para intentar reservar el jueves.
+- El domingo a las **22:05**, las dos cuentas inician sesión en paralelo y esperan hasta las **22:30** para intentar reservar el jueves.
+- El lunes a las **22:05**, las dos cuentas inician sesión en paralelo y esperan hasta las **22:30** para intentar reservar el viernes.
 
-La separación evita buscar la clase del jueves antes de que el centro la publique. Las ejecuciones reales siguen marcándose como error si no encuentran la clase correspondiente.
+La separación evita buscar cada clase antes de que el centro la publique. Las ejecuciones reales siguen marcándose como error si no encuentran la clase correspondiente.
 
 La lista de espera está desactivada (`JOIN_WAITLIST=false`). Si una clase está completa, la ejecución lo indicará pero no realizará esa inscripción.
 
